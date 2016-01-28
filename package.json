@@ -1,0 +1,27 @@
+{
+  "name": "three-proto-particle",
+  "version": "0.0.1",
+  "description": "Very simple not quite particle system",
+  "main": "proto-particle.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dennistimmermann/three-proto-particle"
+  },
+  "keywords": [
+    "threejs",
+    "three",
+    "js",
+    "three-js",
+    "particle",
+    "system"
+  ],
+  "author": "Dennis Timmermann",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dennistimmermann/three-proto-particle/issues"
+  },
+  "homepage": "https://github.com/dennistimmermann/three-proto-particle"
+}
