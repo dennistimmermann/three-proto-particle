@@ -20,7 +20,7 @@ This code may also be a good start to experiment with Three JS BufferGeometries 
 
 ### Creating the particle system
 
-    var Particles = require('Proto-Particles')
+    var Particles = require('three-proto-particle')
 
 in it's easiest form with 1024 particles
 

@@ -1,3 +1,4 @@
+'use strict'
 /**
  * Simple Particle System
  * @author Dennis Timmermann
