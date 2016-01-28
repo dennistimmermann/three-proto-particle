@@ -141,8 +141,9 @@ class Particles extends THREE.Object3D {
 	 * @return {typed Array} the raw attribute array
 	 */
 	getAttributeArray(name) {
-		this.dirty_attributes.add(name)
-		return this.mesh.geometry.getAttribute(name).array
+		var attribute = this.mesh.geometry.getAttribute(name)
+		attribute.needsUpdate = true
+		return attribute.array
 	}
 
 	/**
@@ -162,18 +163,7 @@ class Particles extends THREE.Object3D {
 			attribute.array[ offset + i ] = values[i]
 		}
 
-		this.dirty_attributes.add(name)
-	}
-
-	/**
-	 * call this every time you made changes to the particles or every frame
-	 */
-	update() {
-		/* update all dirt attributes */
-		this.dirty_attributes.forEach((attribute) => {
-			this.mesh.geometry.getAttribute(attribute).needsUpdate = true
-		})
-		this.dirty_attributes.clear()
+		attribute.needsUpdate = true
 	}
 }
 
