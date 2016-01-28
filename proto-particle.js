@@ -206,9 +206,11 @@ class Material extends THREE.ShaderMaterial {
 var vertexShader = `
 	attribute float size;
 	attribute vec3 translate;
-	attribute vec2 sprite;
+	attribute float sprite;
 	attribute float opacity;
 	attribute vec3 color;
+
+	uniform vec2 spritemap;
 
 	varying float vOpacity;
 	varying vec3 vColor;
@@ -218,7 +220,9 @@ var vertexShader = `
 
 		vColor = color;
 		vOpacity = opacity;
-		vUv = uv;
+
+		vec2 coords = vec2( mod( sprite, spritemap.x ), floor( sprite / spritemap.y ) );
+		vUv = uv + vec2(1,1) / spritemap * coords;
 
 		vec4 mvPosition = modelViewMatrix * vec4( translate, 1.0 );
 		mvPosition.xyz += position * size;
