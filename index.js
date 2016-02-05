@@ -14,8 +14,6 @@ var THREE = require( 'three' )
 
 /**
  * p AR ticle system
- *
- * @class  Particles
  */
 class Geometry extends THREE.InstancedBufferGeometry {
 	constructor( particleCount = 1024, tmpl = new THREE.PlaneBufferGeometry( 1, 1, 1, 1 ) ) {
@@ -32,28 +30,12 @@ class Geometry extends THREE.InstancedBufferGeometry {
             uvs = tmpl.getAttribute( 'uv' ).array
         }
 
+		// TODO
 		else if ( tmpl instanceof THREE.Geometry ) {
             // positions = new Float32Array(tmpl.vertices)
             // indices = tmpl.getIndex().array
             // uvs = tmpl.getAttribute( 'uv' ).array
-            // TODO
         }
-
-
-
-		/* check if we want to use tiled spritesheets */
-		// if ( rows > 1 || columns > 1 ) {
-		// 	/* prepare the uvs */
-		// 	for ( var i2 = 0; i2 < uvs.length; i2 += 2 ) {
-		// 		uvs[ i2 + 0 ] /= columns
-		// 		uvs[ i2 + 1 ] /= rows
-		// 	}
-		// 	/* and the positions */
-		// 	for ( var i3 = 0; i3 < positions.length; i3 += 3 ) {
-		// 		positions[ i3 + 0 ] *= ( rows / columns )
-		// 	}
-		// 	// recalculationg normals will be harder i guess?
-		// }
 
 		/* setting up custom attributes. You can add your own and use them in the vertex shader ...
 		 * these attributes are custom for every particle, so be ressourceful :D
@@ -73,6 +55,8 @@ class Geometry extends THREE.InstancedBufferGeometry {
 		var colors = new Float32Array( particleCount * 3 )
 		/* particle ids ... beacuse WebGL reasons */
 		var ids = new Float32Array( particleCount )
+		/* particle time of birth ... beacuse WebGL reasons */
+		var tobs = new Float32Array( particleCount )
 		/* add your own here ... */
 
 		/* typed arrays are initialized with 0, if you want other values, do that here */
@@ -104,31 +88,42 @@ class Geometry extends THREE.InstancedBufferGeometry {
 		this.addAttribute( 'color', new THREE.InstancedBufferAttribute( colors, 3, 1 ) )
 		this.addAttribute( 'opacity', new THREE.InstancedBufferAttribute( opacities, 1 , 1 ) )
 		this.addAttribute( 'id', new THREE.InstancedBufferAttribute( ids, 1 , 1 ) )
+		this.addAttribute( 'tob', new THREE.InstancedBufferAttribute( tobs, 1 , 1 ) )
 
-
-
-		/* create the material */
-		// var mat = new THREE.ShaderMaterial(material)
-
-		/* create mesh and add it */
 		this.particleCount = particleCount
-		/* keep track of wich particles we already used */
-		// this.iter = 0
-		// this.add( this.mesh )
-
-		/* calculating a bounding box can be quite expensive so we just render the particles no matter what */
-		// this.frustumCulled = false
-		// this.mesh.frustumCulled = false
 	}
 
-    setOwnAttribute( name, iter, values ) {
-        var offset = iter * values.length
-        // console.log( name )
-        for ( var i = 0; i < values.length; i++ ) {
-            // console.log( this[ name ] )
-			this[ name ][ offset + i ] = values[ i ]
+
+
+	/**
+	 * if we use a spritemap, we have to change the uvs
+	 *
+	 * @param  {number} columns num of columns
+	 * @param  {number} rows num of rows
+	 * @param  {boolean} prepareGeometry set tro to change geometry (proportions), too
+	 */
+	prepareSpritemaps( columns, rows, prepareGeometry = false ) {
+		/* check if we want to use tiled spritesheets */
+		var positions = this.getAttribute( 'position' )
+		var uvs = this.getAttribute( 'uv' )
+
+		/* prepare the uvs */
+		for ( var i2 = 0; i2 < uvs.array.length; i2 += 2 ) {
+			uvs.array[ i2 + 0 ] /= columns
+			uvs.array[ i2 + 1 ] /= rows
 		}
-    }
+
+		if ( prepareGeometry ) {
+			/* and the positions */
+			for ( var i3 = 0; i3 < positions.array.length; i3 += 3 ) {
+				positions.array[ i3 + 0 ] *= ( rows / columns )
+			}
+		}
+		// recalculationg normals will be harder i guess?
+
+		positions.needsUpdate = true
+		uvs.needsUpdate = true
+	}
 
 	update( dt, stage, time ) {
 		this.material.uniforms.time.value = time / 5000
@@ -137,6 +132,9 @@ class Geometry extends THREE.InstancedBufferGeometry {
 	}
 }
 
+/**
+ * Particle Mesh, prepares geometry and material
+ */
 class Mesh extends THREE.Mesh {
    constructor( geometry, material ) {
 	   /* set up material */
@@ -144,14 +142,21 @@ class Mesh extends THREE.Mesh {
 	   // material.defines = material.defines || {}
 	   if ( material.uniforms.texture ) material.defines.TEXTURE = true
 
-	   // if ( rows > 1 || columns > 1 ) {
-	   // 	material.defines.SPRITEMAP = true
-	   // 	material.uniforms.spritemap = { type: "v2", value: new THREE.Vector2( columns, rows ) }
-	   // }
+	   if ( material.rows > 1 || material.columns > 1 ) {
+		   material.defines.SPRITEMAP = true
+		   material.uniforms.spritemap = { type: "v2", value: new THREE.Vector2( material.columns, material.rows ) }
+
+		   geometry.prepareSpritemaps( material.columns, material.rows )
+	   }
+
 	   super( geometry, material )
+	   this.frustumCulled = false
    }
 }
 
+/**
+ * physics enabled particle system
+ */
 class System extends Mesh {
 	constructor( geometry, material ) {
 		if ( typeof geometry == 'number' ) {
@@ -160,12 +165,17 @@ class System extends Mesh {
 		}
 		super( geometry, material )
 
-		this.geometry = geometry
-		this.material = material
+		// this.geometry = geometry
+		// this.material = material
 
 		this.particleCount = geometry.particleCount
 		this.iter = 0
 		this.speed = 1
+
+		this.material.defines.AGE = true
+
+		this.clock = new THREE.Clock()
+		this.clock.start()
 
 		this.velocities = new Float32Array( this.particleCount * 3 ),
 		this.accelerations = new Float32Array( this.particleCount * 3 )
@@ -179,10 +189,12 @@ class System extends Mesh {
 		this.emitters = []
 	}
 
+	// TODO
 	addForce( force ) {
 		//
 	}
 
+	// TODO
 	addEmitter( emitter ) {
 		//
 	}
@@ -195,10 +207,18 @@ class System extends Mesh {
 	 * @param {Object} options options array containing settings for attributes
 	 */
 	addParticle( translate, options = {} ) {
+		options.tob = options.tob || this.clock.getElapsedTime()
 		this.setParticle( this.iter, translate, options )
 		this.iter = ( this.iter + 1 ) % ( this.particleCount - 1 )
 	}
 
+	/**
+	 * set position and options of particle NUM
+	 *
+	 * @param {number} iter index of particle, 0..particleCount
+	 * @param {array|THREE.Vector3} translate x y and z components of particle position
+	 * @param {Object} options  other attributes of particle
+	 */
 	setParticle( iter, translate, options = {} ) {
 		/* if the position is a Vector, convert it to an array */
 		if ( translate.toArray ) translate = translate.toArray()
@@ -265,9 +285,10 @@ class System extends Mesh {
 		}
 	}
 
-	update( ) {
+	update( dt, stage, time ) {
 		this._tickPhysics()
 		this._tickMove()
+		this.material.uniforms.time.value = this.clock.getElapsedTime()
 	}
 }
 
@@ -313,15 +334,36 @@ class Attractor extends Force {
 }
 
 class Jet extends Force {
-	constructor( px, py, pz, dx, dy, dz ) {
+	constructor( px = 0, py = 0, pz = 0, mass = 100, spread = 1.5, deadzone = 1, dx, dy, dz) {
 		super()
-		var dx = this.px - px
-		var dy = this.py - py
-		var dz = this.pz - pz
+		this.x = px
+		this.y = py
+		this.z = pz
+
+		this.dx = dx
+		this.dy = dy
+		this.dz = dz
+
+		this.mass = mass / 1000
+		this.spread = spread
+		this.deadzone = deadzone
 	}
 
 	influence( iter, positions, velocities, accelerations ) {
-		//
+		var dx = this.x - positions[ iter + 0 ]
+		var dy = this.y - positions[ iter + 1 ]
+		var dz = this.z - positions[ iter + 2 ]
+
+		/* don't ask me why, but in V8 this is faster than omitting the math.max */
+		var cdx = Math.max( dx * dx , this.deadzone )
+		var cdy = Math.max( dy * dy , this.deadzone )
+		var cdz = Math.max( dz * dz , this.deadzone )
+
+		var force = this.mass / Math.pow( cdx + cdy + cdz, this.spread )
+
+		accelerations[ iter + 0 ] += Math.abs( dx * force ) * this.dx
+		accelerations[ iter + 1 ] += Math.abs( dy * force ) * this.dy
+		accelerations[ iter + 2 ] += Math.abs( dz * force ) * this.dz
 	}
 }
 
@@ -397,6 +439,8 @@ class Floor extends Force {
  */
 class BillboardMaterial extends THREE.ShaderMaterial {
 	constructor( options ) {
+		var columns = 1
+		var rows = 1
 
 		/* default options for the material, basically just the shaders */
 		var def = {
@@ -419,11 +463,19 @@ class BillboardMaterial extends THREE.ShaderMaterial {
 			else if ( prop === 'texture' ) {
 				def.uniforms.texture = def.uniforms.texture || { type: "t", value: options.texture }
 			}
+
+			else if ( prop === 'columns' ) columns = options.columns
+
+			else if ( prop === 'rows' ) rows = options.columns
+
 			/* add the rest */
 			else def[ prop ] = options[ prop ]
 		}
 
 		super( def )
+
+		this.columns = columns
+		this.rows = rows
 	}
 }
 
@@ -434,6 +486,7 @@ var vertexShader = `
 	attribute float opacity;
 	attribute vec3 color;
 	attribute float id;
+	attribute float tob;
 
 	uniform vec2 spritemap;
 	uniform float time;
@@ -454,13 +507,19 @@ var vertexShader = `
 			vUv = uv;
 		#endif
 
-		float radius = 0.2;
+		#ifdef AGE
+			float age = time - tob;
+		#else
+			float age = 0;
+		#endif
+
+		float radius = 0.05;
 		float speed = ( 0.2 + mod(id, 8.0) / 10.0 ) * 5.0;
 		float progress = time * speed + id;
 
 		vec3 mtrans = vec3( translate.x + sin( progress ) * radius, translate.y + sin( progress * speed / 5.0 ) * radius, translate.z + cos( progress ) * radius );
 
-		vec4 mvPosition = modelViewMatrix * vec4( mtrans, 1.0 );
+		vec4 mvPosition = modelViewMatrix * vec4( translate, 1.0 );
 		mvPosition.xyz += position * size; // * ( sin(time + id) + 1.5 );
 
 		gl_Position = projectionMatrix * mvPosition;
@@ -488,6 +547,7 @@ module.exports = {
 	Actors: {
 		Gravity: Gravity,
 		Attractor: Attractor,
+		Jet: Jet,
 		Limit: Limit,
 		Floor: Floor
 	},
@@ -495,10 +555,3 @@ module.exports = {
 	fragmentShader: fragmentShader,
 	vertexShader: vertexShader
 }
-
-
-
-// var particles = new Particles.Mesh( new Particles.Geometry(), new Particles.BillboardMaterial() )
-//
-// var particleSystem = new Particle.System( particleCount )
-// var particleSystem = new Particle.System( mesh)
