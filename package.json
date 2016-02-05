@@ -1,6 +1,6 @@
 {
   "name": "three-proto-particle",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Very simple not quite particle system",
   "main": "dist/build.js",
   "scripts": {
