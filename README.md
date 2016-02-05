@@ -22,50 +22,51 @@ This code may also be a good start to experiment with Three JS BufferGeometries 
 
     var Particles = require('three-proto-particle')
 
-in it's easiest form with 1024 particles
+in it's easiest form with physics and 1024 particles
 
-    var particles = new Particle.System()
+    var particlesSystem = new Particle.System( 1024 )
 
-with a custom number of particles
+just the geometry
 
-    var particles = new Particle.System(64)
+    var geometry = new Particle.Geometry( )
+    var geometry = new Particle.Geometry( 1024 )
+    var geometry = new Particle.Geometry( 1024, new THREE.PlaneBufferGeometry( 1, 1, 1, 1 ) )
 
-with material changes, eg a texture
+just the material
 
-    var particles = new Particle.System(64, new Particles.Material( { 'texture': THREE.ImageUtils.loadTexture( "images/uv.jpg" )} )
+    var material = new Particle.BillboardMaterial( )
+    var material = new Particle.BillboardMaterial( { texture: THREE.ImageUtils.loadTexture("images/circle.png") })
+    var material = new Particle.BillboardMaterial( { texture: THREE.ImageUtils.loadTexture("images/circle.png"), columns: 2, rows: 2 })
 
-use a spritsheet with 4 columns and 2 rows
+just the mesh without bells and whistles
 
-    var particles = new Particle.System(64, new Particles.Material( { 'texture': THREE.ImageUtils.loadTexture( "images/sprites.jpg" )} , 4, 2)
+    var particleMesh = new Particle.Mesh( geometry, material )
 
-just using a custom geometry
-
-    var particles = new Particle.System(4096, new Particles.Material() , 1, 1, new THREE.CircleBufferGeometry(1,6))
 
 ### Adding / manipulating particles
 
 just setting the position of a particle
 
-    particles.addParticle( new THREE.Vector3( 1, 1, 1 ) )
-    particles.addParticle( [1, 1, 1 ] )
+    particleSystem.addParticle( new THREE.Vector3( 1, 1, 1 ) )
+    particleSystem.addParticle( [1, 1, 1 ] )
 
 setting position and custom attribute
 
-    particles.addParticle( [1, 1, 1 ], { size: 2, opacity: 0.5, color: [ 0.5, 0.5, 1 ], sprite: 2 } )
+    particleSystem.addParticle( [1, 1, 1 ], { size: 2, opacity: 0.5, color: [ 0.5, 0.5, 1 ], sprite: 2 } )
 
 just setting single attributes (translation and size) of a single particle (particle #45)
 
-    particles.setAttribute( 'translate' , 45, [2, 0, 5] )
-    particles.setAttribute( 'size' , 45, 2 )
+    particleSystem.setAttribute( 'translate' , 45, [2, 0, 5] )
+    particleSystem.setAttribute( 'size' , 45, 2 )
 
 setting an attribute (translation) for a bunch of particles
 
 ```
-var translations = particles.getAttributeArray('translation')
-var sizes = particles.getAttributeArray('size')
+var translations = particleSystem.getAttributeArray('translation')
+var sizes = particleSystem.getAttributeArray('size')
 
-for( var i = 0; i < particles.particleCount; i++ ) {
-    /* keep in mind, that different attributes consist of different number of attributes, 
+for( var i = 0; i < particleSystem.particleCount; i++ ) {
+    /* keep in mind, that different attributes consist of different number of attributes,
     * e.g. x,y,z for translation and only s for size */
     translations[ i*3 + 0 ] = Math.random() // x
     translations[ i*3 + 1 ] = Math.random() // y
@@ -76,6 +77,3 @@ for( var i = 0; i < particles.particleCount; i++ ) {
 ```
 
 ### ... more will come soon
-
-
-
