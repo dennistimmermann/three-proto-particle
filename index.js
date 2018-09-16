@@ -78,17 +78,17 @@ class Geometry extends THREE.InstancedBufferGeometry {
 		/* add attributes to geometry
 		 * these attributes are shared for all particles */
 		this.setIndex( new THREE.BufferAttribute( indices, 1 ) )
-		this.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 , 1 ) )
-		this.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 , 1 ) )
+		this.addAttribute( 'position', new THREE.BufferAttribute( positions, 3, false, 1 ) )
+		this.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2, true, 1 ) )
 
 		/* custom for every particle */
-		this.addAttribute( 'sprite', new THREE.InstancedBufferAttribute( sprites, 1 , 1 ) )
-		this.addAttribute( 'size', new THREE.InstancedBufferAttribute( sizes, 1, 1 ) )
-		this.addAttribute( 'translate', new THREE.InstancedBufferAttribute( translations, 3, 1 ) )
-		this.addAttribute( 'color', new THREE.InstancedBufferAttribute( colors, 3, 1 ) )
-		this.addAttribute( 'opacity', new THREE.InstancedBufferAttribute( opacities, 1 , 1 ) )
-		this.addAttribute( 'id', new THREE.InstancedBufferAttribute( ids, 1 , 1 ) )
-		this.addAttribute( 'tob', new THREE.InstancedBufferAttribute( tobs, 1 , 1 ) )
+		this.addAttribute( 'sprite', new THREE.InstancedBufferAttribute( sprites, 1, false, 1 ) )
+		this.addAttribute( 'size', new THREE.InstancedBufferAttribute( sizes, 1, false, 1 ) )
+		this.addAttribute( 'translate', new THREE.InstancedBufferAttribute( translations, 3, false, 1 ) )
+		this.addAttribute( 'color', new THREE.InstancedBufferAttribute( colors, 3, false, 1 ) )
+		this.addAttribute( 'opacity', new THREE.InstancedBufferAttribute( opacities, 1, true, 1 ) )
+		this.addAttribute( 'id', new THREE.InstancedBufferAttribute( ids, 1, false, 1 ) )
+		this.addAttribute( 'tob', new THREE.InstancedBufferAttribute( tobs, 1, false, 1 ) )
 
 		this.particleCount = particleCount
 	}
